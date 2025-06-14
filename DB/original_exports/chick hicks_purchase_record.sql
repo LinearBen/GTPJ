@@ -1,0 +1,60 @@
+-- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
+--
+-- Host: localhost    Database: chick hicks
+-- ------------------------------------------------------
+-- Server version	8.0.41
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `purchase_record`
+--
+
+DROP TABLE IF EXISTS `purchase_record`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_record` (
+  `Order_ID` int NOT NULL,
+  `License_Plate` varchar(45) NOT NULL,
+  `Purchase_Date` datetime NOT NULL,
+  `Ticket_ID` int NOT NULL,
+  `Expiration_Date` datetime DEFAULT NULL,
+  `Purchase_Quantity` int NOT NULL,
+  `Remaining_Uses` int NOT NULL,
+  `Status` varchar(45) NOT NULL,
+  `state` int DEFAULT NULL,
+  PRIMARY KEY (`Order_ID`),
+  KEY `TicketID_idx` (`Ticket_ID`),
+  CONSTRAINT `TicketID` FOREIGN KEY (`Ticket_ID`) REFERENCES `products` (`TicketID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `purchase_record`
+--
+
+LOCK TABLES `purchase_record` WRITE;
+/*!40000 ALTER TABLE `purchase_record` DISABLE KEYS */;
+INSERT INTO `purchase_record` VALUES (10000,'ARP-4932','2025-02-01 12:15:21',3,'2025-03-03 12:15:21',1,-1,'DELETE',-1),(10001,'AVG-0458','2025-03-02 15:15:38',1,NULL,1,0,'DELETE',-1),(10002,'3Q-9527','2025-03-05 20:31:00',2,NULL,1,2,'DELETE',-1),(10003,'BVG-0312','2025-03-06 10:01:33',3,'2025-04-06 10:01:33',1,-1,'DELETE',-1),(10004,'RGB-7788','2025-03-06 11:00:42',1,NULL,5,2,'Active',NULL),(10005,'ABV-9985','2025-03-21 21:47:18',1,NULL,2,2,'Active',NULL),(10006,'BBS-6696','2025-03-21 21:48:41',3,'2025-04-20 21:48:41',1,-1,'Active',NULL),(10007,'RSG-7211','2025-03-21 22:25:49',1,NULL,3,3,'Active',NULL),(10008,'ABC-1234','2025-03-26 20:04:48',1,NULL,2,2,'Active',NULL),(10009,'ABC-1234','2025-03-27 19:35:20',1,NULL,2,2,'Active',NULL),(10010,'ASD-2288','2025-04-06 21:08:17',2,NULL,1,2,'Active',NULL),(10011,'BVG-0312','2025-04-06 21:47:08',1,NULL,5,5,'Active',NULL),(10012,'BVG-0312','2025-04-06 21:47:08',2,NULL,2,4,'Active',NULL),(10013,'ABC-2255','2025-05-21 21:48:00',1,NULL,1,1,'Active',NULL),(10014,'ABC-2255','2025-05-21 21:48:47',2,NULL,1,2,'Active',NULL),(10015,'ABC-2255','2025-05-21 21:49:01',3,'2025-06-20 21:49:01',1,-1,'Active',NULL);
+/*!40000 ALTER TABLE `purchase_record` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2025-06-14 20:30:02
