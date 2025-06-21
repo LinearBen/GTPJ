@@ -195,12 +195,6 @@ public class Main {
                         String Vendor_Name = map.get("Vendor_Name");
                         int vendorID = 0;
                         String Maintenance_Item = map.get("Maintenance_Item");
-                        // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd
-                        // HH:mm:ss");
-                        // LocalDateTime Purchase_Date = LocalDateTime.parse(map.get("Purchase_Date"),
-                        // formatter);
-                        // String purchaseDate =
-                        // Purchase_Date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                         String Maintenance_Time = map.get("Maintenance_Time");
                         LocalDate maintenanceDate = LocalDate.parse(Maintenance_Time,
                                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
