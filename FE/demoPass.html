@@ -2,7 +2,6 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <script type="text/javascript"  charset="UTF-8" src="script/loadTable.js" defer></script>
   <title>通行測試</title>
   <style>
     .ticket {
@@ -11,7 +10,6 @@
       margin-left: 5px;
     }
   </style>
-
 
   
 </head>
@@ -38,12 +36,62 @@
       <div id="container1"></div>
     </div>
   </div>
+  
   <script>
+    const apiUrlPurchase2 = 'http://localhost:8000/api/purchaserecord2';
+    const apiUrlPass = 'http://localhost:8000/api/passagerecord'
+    const apiUrlDeviveRecord = 'http://localhost:8000/api/devicerecord'
+    
     const container1 = document.getElementById('container');
     const container2 = document.getElementById('container1');
+    async function loadTable(url, todiv) {
+      try {
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error(`HTTP 錯誤: ${resp.status}`);
+          const data = await resp.json();
+          if (!Array.isArray(data) || data.length === 0) {
+              todiv.textContent = '沒有資料';
+              return;
+          }
+          // 產生表格
+          let table ="";
+          switch (url) {
+              case apiUrlPass:
+                  table = '<table id="passagerecord"><thead><tr>';
+                  break
+              case apiUrlPurchase2:
+                  table = '<table id="purchase"><thead><tr>';
+                  break
+              default:
+                  break;
+          }
+          // 自動產出表頭
+          const keys = Object.keys(data[0]);
+          keys.forEach(k => {
+              if (k != 'state'){
+                  table += `<th>${k}</th>`;
+              }
+          });
+          table += '</tr></thead><tbody>';
+          // 每一列資料
+          data.forEach(row => {
+              table += '<tr>';
+              keys.forEach(k => {
+                  if(k != 'state'){
+                      table += `<td>${row[k]}</td>`;
+                  }
+              });
+              table += '</tr>';
+          });
+          table += '</tbody></table>';
+          todiv.innerHTML = table;
+      } catch (err) {
+          todiv.textContent = '載入失敗：' + err.message;
+      }
+    }
+    
     loadTable(apiUrlPass, container1);
     loadTable(apiUrlPurchase2, container2);
-
 
     const dname = document.getElementById("dname");
     //取得客戶名稱在新增到select id:dname
@@ -72,7 +120,7 @@
 
 
 
-     function insertpost() {
+     async function insertpost() {
       // API連結
       const apiUrlInsert = 'http://localhost:8000/api/insert';
       let license = document.getElementById("license").value.trim();
@@ -81,74 +129,64 @@
       const rows = tbody.getElementsByTagName("tr");
 
       // 從purchase table查詢目前輸入的license是否存在 
-      // for (let i = 0; i < rows.length; i++) {
-      //   // 取得當下row的cells
-      //   const cells = rows[i].getElementsByTagName("td");
-      //   // 取得第二欄的字串
-      //   const secCol = cells[1].textContent.toLowerCase();
+      for (let i = 0; i < rows.length; i++) {
+        // 取得當下row的cells
+        const cells = rows[i].getElementsByTagName("td");
+        // 取得第二欄的字串
+        const secCol = cells[1].textContent.toLowerCase();
 
-      //   // 有找到就直接跳出迴圈，如果都找不到就return alert("禁止通行，請購買過路權")
-      //   if (license.toLowerCase() === secCol) {
-      //     break;
-      //   } else if (i === rows.length - 1) {
-      //     alert("禁止通行，請購買過路權")
-      //     return;
-      //   }
-      // }
+        // 有找到就直接跳出迴圈，如果都找不到就return alert("禁止通行，請購買過路權")
+        if (license.toLowerCase() === secCol) {
+          break;
+        } else if (i === rows.length - 1) {
+          alert("禁止通行，請購買過路權")
+          return;
+        }
+      }
       //警告沒有選擇閘門 (dname為0的時候)
       if (device_id == 0) {
         alert("請選擇閘門");
         return;
       }
-      //回傳資料到insert API
-      fetch(apiUrlInsert, {
-        method: 'POST',
-        mode: 'cors',
-          body: JSON.stringify({
-            table: "pass",
-            License_Plate: license,
-            Device_ID: device_id,
-          }),
-      })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(err => { throw new Error(err); });
-        }
-        return response.text();
-      })
-      .then(data => {
-        console.log("成功", data);
-      })
-      .catch(err => {
-        alert(err.message);  // ✅這裡會收到後端錯誤訊息
-      });
-
-
-
-
-      //輸入與選擇回歸預設
-      document.getElementById("license").value = "";
-      document.getElementById("dname").value = "0";
-
-      //刷新頁面的兩個table
-       loadTable(apiUrlPass, container1);
-       loadTable(apiUrlPurchase2, container2);
-      /*
-      if (pname && price) {
-        let returnbody= JSON.stringify({ table:"products", pname: pname,  price: price});
-        console.log(returnbody);
-        //格式檢查
-        fetch('http://localhost:8000/api/2/insert', {
-          method: 'POST',
-          mode: 'cors', // ✅ 很關鍵
-          body: returnbody,
-        })
-        console.log("完成fetch")
-      } else {
-        alert("請輸入資料");
+      //警告沒有輸入車牌號碼
+      if (!license) {
+        alert("請輸入車牌號碼");
+        return;
       }
-        */
+      //回傳資料到insert API
+      try{
+        fetch(apiUrlInsert, {
+          method: 'POST',
+          mode: 'cors',
+            body: JSON.stringify({
+              table: "pass",
+              License_Plate: license,
+              Device_ID: device_id,
+            }),
+        })
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText || `HTTP 錯誤: ${response.status}`);
+        }
+
+        console.log("成功", await response.text());
+
+        // Reset form and refresh tables
+        licenseInput.value = "";
+        dnameSelect.value = "0";
+        await loadTable(apiUrlPass, passageContainer);
+        await loadTable(apiUrlPurchase2, purchaseContainer);
+
+      } catch (err) {
+        alert(err.message); // This will show the backend error message
+      }
     }
+
+
+
+
+      
+    
   </script>
 </body>
 
