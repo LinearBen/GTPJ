@@ -2,6 +2,7 @@
 package com.example;
 
 import com.sun.net.httpserver.*;
+import com.sun.org.apache.xpath.internal.operations.Or;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -17,26 +18,40 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) throws IOException {
+        // 每10分鐘檢查一次purchase_record有沒有過期的票(demo不使用)
+        /*
+         * new Thread(() -> {
+         * while (true) {
+         * try {
+         * orderCheck.chackOrder("SELECT * FROM purchase_record WHERE Status = 'Active'"
+         * );
+         * Thread.sleep(1000 * 60 * 10); // 10
+         * } catch (InterruptedException e) {
+         * e.printStackTrace();
+         * }
+         * }
+         * }).start();
+         */
         // 建立一個綁定在 localhost:8000 的 server
         HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
         // 綁定 API 路由
         server.createContext("/api/purchaserecord", new dataHandler("SELECT * FROM purchaserecord"));
+        server.createContext("/api/purchaserecord2", new dataHandler("SELECT * FROM purchaserecord WHERE Status = 'Active'"));
         server.createContext("/api/products", new dataHandler("SELECT * FROM  ticket"));
-        server.createContext("/api/passagerecord",  new dataHandler("SELECT * FROM  passagerecord"));
-        server.createContext("/api/maintenancerecord",  new dataHandler("SELECT * FROM  maintenancerecord"));
-        server.createContext("/api/devicerecord",  new dataHandler("SELECT * FROM  devicerecord"));
-        server.createContext("/api/vendorRecord",  new dataHandler("SELECT * FROM  vendorrecord"));
-        server.createContext("/api/tickets_total",  new dataHandler("SELECT * FROM  tickets_total"));
+        server.createContext("/api/passagerecord", new dataHandler("SELECT * FROM  passagerecord"));
+        server.createContext("/api/maintenancerecord", new dataHandler("SELECT * FROM  maintenancerecord"));
+        server.createContext("/api/devicerecord", new dataHandler("SELECT * FROM  devicerecord"));
+        server.createContext("/api/vendorRecord", new dataHandler("SELECT * FROM  vendorrecord"));
+        server.createContext("/api/tickets_total", new dataHandler("SELECT * FROM  tickets_total"));
 
-        server.createContext("/api/insert" , new InsertDataHandler());
-        server.createContext("/api/update" , new UpdateDataHandler());
+        server.createContext("/api/insert", new InsertDataHandler());
+        server.createContext("/api/update", new UpdateDataHandler());
         // server.createContext("/api/delete" , new DeleteDataHandler());
-
 
         // 啟動 server
         server.start();
@@ -68,18 +83,13 @@ public class Main {
             os.close();
         }
     }
-     // 檢查車牌是否已持有有效月費
-     private static boolean isMonthlyPassActive(String licensePlate) throws SQLException {
-        
-        ResultSet rs = DBConnect.selectQuery("SELECT * FROM purchase_record WHERE License_Plate = ? AND Ticket_ID = 3 AND Status = 'Active'", licensePlate);
-        return rs.next(); // 如果有符合條件的記錄，表示已持有有效月費，回傳 true
-    }
+
     // 更新資料
     static class UpdateDataHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-             // ✅ 處理 CORS 預檢請求（OPTIONS）
-             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+            // ✅ 處理 CORS 預檢請求（OPTIONS）
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
                 exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
                 exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
@@ -136,8 +146,10 @@ public class Main {
                             // 到 purchase_record 表 update
                             DBConnect.executeUpdate(
                                     "UPDATE `chick hicks`.`purchase_record` SET `License_Plate` = ?, `Purchase_Date` = ?, `Ticket_ID` = ?, `Expiration_Date` = ?, `Purchase_Quantity` = ? , `Remaining_Uses` = ?, `Status` = ?, `state` = ? WHERE (`Order_ID` = ?);",
-                                    LicensePlate, purchaseDate, ticketId, expirationDate, quantity, remainingUses, Status ,state, id);
+                                    LicensePlate, purchaseDate, ticketId, expirationDate, quantity, remainingUses,
+                                    Status, state, id);
                         }
+                        rs.getStatement().getConnection().close();
                     } catch (SQLException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -149,15 +161,15 @@ public class Main {
                     int price = Integer.parseInt(map.get("Price"));
                     int maxUses = Integer.parseInt(map.get("Max_Uses"));
                     int duration = 0;
-                    if(map.get("duration") != null){
+                    if (map.get("duration") != null) {
                         duration = Integer.parseInt(map.get("Duration"));
                     }
                     int pro_state = Integer.parseInt(map.get("state"));
                     DBConnect.executeUpdate(
                             "UPDATE `chick hicks`.`products` SET `TicketName` = ?, `Price` = ?, `Max_Uses` = ?, `Duration` = ?, `state` = ? WHERE (`TicketID` = ?);",
-                            ticketName, price, maxUses, duration,pro_state, TicketId);
+                            ticketName, price, maxUses, duration, pro_state, TicketId);
                     break;
-                
+
                 case "devicerecord":
                     try {
                         int Device_ID = Integer.parseInt(map.get("Device_ID"));
@@ -169,7 +181,8 @@ public class Main {
                         int dev_state = Integer.parseInt(map.get("state"));
                         DBConnect.executeUpdate(
                                 "UPDATE `chick hicks`.`device_record` SET `Device_Name` = ?, `Purchase_Time` = ?, `Purchase_Amount` = ?, `Maintenance_Interval` = ?, `Remarks` = ?, `state` = ? WHERE (`Device_ID` = ?);",
-                                Device_Name, Purchase_Time, Purchase_Amount, MaintenanceInterval, Remarks,dev_state, Device_ID);
+                                Device_Name, Purchase_Time, Purchase_Amount, MaintenanceInterval, Remarks, dev_state,
+                                Device_ID);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -182,32 +195,41 @@ public class Main {
                         String Vendor_Name = map.get("Vendor_Name");
                         int vendorID = 0;
                         String Maintenance_Item = map.get("Maintenance_Item");
-                        // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                        // LocalDateTime Purchase_Date = LocalDateTime.parse(map.get("Purchase_Date"), formatter);
-                        // String purchaseDate = Purchase_Date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                        // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd
+                        // HH:mm:ss");
+                        // LocalDateTime Purchase_Date = LocalDateTime.parse(map.get("Purchase_Date"),
+                        // formatter);
+                        // String purchaseDate =
+                        // Purchase_Date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                         String Maintenance_Time = map.get("Maintenance_Time");
-                        LocalDate maintenanceDate = LocalDate.parse(Maintenance_Time, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                        
+                        LocalDate maintenanceDate = LocalDate.parse(Maintenance_Time,
+                                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
                         int Maintenance_Cost = Integer.parseInt(map.get("Maintenance_Cost"));
                         String Remarks = map.get("Remarks");
                         int M_state = Integer.parseInt(map.get("state"));
                         // 計算下次維護日
                         String Next_Maintenance_Date = null;
-                        ResultSet deviceRs = DBConnect.selectQuery("SELECT * FROM device_record WHERE Device_ID = ?", Device_ID);
-                            while (deviceRs.next()) {
-                                int interval = deviceRs.getInt("Maintenance_Interval");
-                                LocalDate maintenance = maintenanceDate.plusDays(interval);
-                                Next_Maintenance_Date = maintenance.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                            }
+                        ResultSet deviceRs = DBConnect.selectQuery("SELECT * FROM device_record WHERE Device_ID = ?",
+                                Device_ID);
+                        while (deviceRs.next()) {
+                            int interval = deviceRs.getInt("Maintenance_Interval");
+                            LocalDate maintenance = maintenanceDate.plusDays(interval);
+                            Next_Maintenance_Date = maintenance.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                        }
                         // 取得Vendor_ID
-                        ResultSet VendorRs = DBConnect.selectQuery("SELECT * FROM vendor_record WHERE Vendor_Name = ? AND Contact_Person = ?", Vendor_Name, Contact_Person);
+                        ResultSet VendorRs = DBConnect.selectQuery(
+                                "SELECT * FROM vendor_record WHERE Vendor_Name = ? AND Contact_Person = ?", Vendor_Name,
+                                Contact_Person);
                         while (VendorRs.next()) {
                             vendorID = VendorRs.getInt("Vendor_ID");
                         }
                         VendorRs.close();
-                                
-                        DBConnect.executeUpdate("UPDATE `chick hicks`.`maintenance_record` SET `Device_ID` = ?, `Vendor_ID` = ?, `Maintenance_Item` = ?, `Maintenance_Time` = ?, `Maintenance_Cost` = ?, `Next_Maintenance_Date` = ?, `Remarks` = ?, `state` = ? WHERE (`maintenance_ID` = ?);",Device_ID,vendorID,Maintenance_Item,Maintenance_Time,Maintenance_Cost,Next_Maintenance_Date,Remarks,M_state,maintenanceId);
+
+                        DBConnect.executeUpdate(
+                                "UPDATE `chick hicks`.`maintenance_record` SET `Device_ID` = ?, `Vendor_ID` = ?, `Maintenance_Item` = ?, `Maintenance_Time` = ?, `Maintenance_Cost` = ?, `Next_Maintenance_Date` = ?, `Remarks` = ?, `state` = ? WHERE (`maintenance_ID` = ?);",
+                                Device_ID, vendorID, Maintenance_Item, Maintenance_Time, Maintenance_Cost,
+                                Next_Maintenance_Date, Remarks, M_state, maintenanceId);
                         deviceRs.close();
 
                     } catch (Exception e) {
@@ -227,7 +249,9 @@ public class Main {
                         String contractEnd = map.get("Contract_End");
                         int V_state = Integer.parseInt(map.get("state"));
                         DBConnect.executeUpdate(
-                                "UPDATE `chick hicks`.`vendor_record` SET `Vendor_Name` = ?, `Contact_Person` = ?, `Phone` = ?, `Email` = ?, `Address` = ?, `Service_Type` = ?, `Contract_Start` = ?, `Contract_End` = ?, `state` = ? WHERE (`Vendor_ID`= ?);",vendorName,contact_person,phone,email,address,service,contractStart,contractEnd,V_state,vendorId);
+                                "UPDATE `chick hicks`.`vendor_record` SET `Vendor_Name` = ?, `Contact_Person` = ?, `Phone` = ?, `Email` = ?, `Address` = ?, `Service_Type` = ?, `Contract_Start` = ?, `Contract_End` = ?, `state` = ? WHERE (`Vendor_ID`= ?);",
+                                vendorName, contact_person, phone, email, address, service, contractStart, contractEnd,
+                                V_state, vendorId);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -241,7 +265,7 @@ public class Main {
 
         }
     }
-    
+
     // 定義 handler
     static class InsertDataHandler implements HttpHandler {
         @Override
@@ -282,6 +306,7 @@ public class Main {
                                     id, LicensePlate, purchaseDate, ticketId, expirationDate, quantity, remainingUses,
                                     "Active");
                         }
+                        rs.getStatement().getConnection().close(); 
                     } catch (SQLException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -360,6 +385,66 @@ public class Main {
                         e.printStackTrace();
                     }
                     break;
+                
+                case "pass":
+                    try{
+                        // 取得前端回傳的資料
+                        String License_Plate = map.get("License_Plate");
+                        int Gate_ID = Integer.parseInt(map.get("Device_ID"));
+                        System.out.println(License_Plate+" "+Gate_ID);
+                        int Ticket_ID = 0;
+                        int Order_ID = 0;
+
+                        
+                        // 如果Ticket_ID ==3的時候檢查Expiration_Date是否過期，過期要給它的Status改成Expired，然後繼續往下找下一個優先使用的訂單。
+                        orderCheck.chackOrder("SELECT * FROM purchase_record WHERE License_Plate='"+ License_Plate +"' AND Status = 'Active'");
+                        // 從Purchase_record取得該License_Plate所有Status為"Active"的資料
+                        ResultSet rs1 = DBConnect.selectQuery("SELECT * FROM purchase_record WHERE License_Plate = ? AND Status = 'Active'", License_Plate);
+                        // 取得需優先使用的Ticket_ID、Order_ID，優先級：Ticket_ID 3>2>1。
+                        while (rs1.next()) {
+                            int thisTicket_ID = rs1.getInt("Ticket_ID");
+                            if(Ticket_ID < thisTicket_ID){
+                                Ticket_ID = thisTicket_ID;
+                                Order_ID = rs1.getInt("Order_ID");
+
+                            }
+
+                            
+                        }
+                        System.out.println(Order_ID+" "+Ticket_ID);
+                        rs1.getStatement().getConnection().close();
+
+                        
+                        // 沒有找到訂單就回傳字串到前端"月票已過期，需要重新購買月票或其他票種"
+                        if(Order_ID == 0){
+                            String errorMsg = "月票已過期，需要重新購買月票或其他票種";
+                            byte[] responseBytes = errorMsg.getBytes("UTF-8");
+
+                            exchange.sendResponseHeaders(400, responseBytes.length); 
+                            OutputStream os = exchange.getResponseBody();
+                            os.write(responseBytes);
+                            os.close();
+                            
+                            return;
+                        }
+                        // 取得準備insert到passage_record的Serial_Number
+                        int Serial_Number = DBConnect.getNextId("passage_record", "Serial_Number");
+
+                        // 取得現在的時間，準備insert到passage_record
+                        String Passage_Time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+                        // 執行insert：Serial_Number, Passage_Time, Gate_ID, Purchase_ID, Ticket_ID
+                        DBConnect.executeUpdate("INSERT INTO passage_record (Serial_Number, Passage_Time, Gate_ID, Purchase_ID, Ticket_ID) VALUES (?, ?, ?, ?, ?)",Serial_Number, Passage_Time, Gate_ID, Order_ID, Ticket_ID);
+                        
+
+                        // update Purchase_record 這筆訂單的Remaining_Uses要扣1(如果Remaining_Uses == -1 就不用扣)
+                        
+                        DBConnect.executeUpdate("UPDATE purchase_record SET Remaining_Uses = Remaining_Uses - 1 WHERE Order_ID = ? AND Remaining_Uses > 0", Order_ID);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    break;
 
                 default:
                     exchange.sendResponseHeaders(200, -1);
@@ -429,5 +514,46 @@ public class Main {
                     .replace("\n", "\\n")
                     .replace("\r", "\\r");
         }
+    }
+
+    // 訂單檢查
+    static class orderCheck {
+        // 遍歷Purchase_record，現在時間超過Expiration_Date，該列的Status改成Expired
+        static void chackOrder(String sql) {
+            LocalDateTime now = LocalDateTime.now();
+            ResultSet rs = DBConnect.selectQuery(sql);
+            try {
+                while (rs.next()) {
+                    String expirationDate = rs.getString("Expiration_Date");
+                    if (expirationDate == null) {
+                        continue;
+                    }
+                    LocalDateTime expiration = LocalDateTime.parse(expirationDate,
+                            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+                    if (now.isAfter(expiration)) {
+                        int Order_ID = rs.getInt("Order_ID");
+                        DBConnect.executeUpdate(
+                                "UPDATE `chick hicks`.`purchase_record` SET `Status` = 'Expired' WHERE (`Order_ID` = ?);",
+                                Order_ID);
+                    }
+                }
+                rs.getStatement().getConnection().close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        // 有效月費檢查
+        private static boolean isMonthlyPassActive(String licensePlate) throws Exception {
+            chackOrder("SELECT * FROM purchase_record WHERE License_Plate =" + licensePlate
+                    + "AND Ticket_ID = 3 AND Status = 'Active'");
+            ResultSet rs = DBConnect.selectQuery(
+                    "SELECT * FROM purchase_record WHERE License_Plate = ? AND Ticket_ID = 3 AND Status = 'Active'",
+                    licensePlate);
+            return rs.next(); // 如果有符合條件的記錄，表示已持有有效月費，回傳 true
+        }
+
     }
 }

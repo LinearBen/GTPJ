@@ -1,5 +1,6 @@
 const apiUrlProducts = 'http://localhost:8000/api/products';
 const apiUrlPurchase = 'http://localhost:8000/api/purchaserecord';
+const apiUrlPurchase2 = 'http://localhost:8000/api/purchaserecord2';
 const apiUrlPass = 'http://localhost:8000/api/passagerecord'
 const apiUrlMaintenancerecord = 'http://localhost:8000/api/maintenancerecord'
 const apiUrltickets_total = 'http://localhost:8000/api/tickets_total'
@@ -20,18 +21,50 @@ async function loadTable(url, todiv) {
             return;
         }
         // 產生表格
-        let table = '<table><thead><tr>';
+        let table ="";
+        switch (url) {
+            case apiUrlProducts:
+                table = '<table id="products"><thead><tr>';
+                break;
+            case apiUrlPurchase:
+                table = '<table id="purchase"><thead><tr>';
+                break;
+            case apiUrlPass:
+                table = '<table id="passagerecord"><thead><tr>';
+                break
+            case apiUrlMaintenancerecord:
+                table = '<table id="maintenancerecord"><thead><tr>';
+                break
+            case apiUrltickets_total:
+                table = '<table id="tickets_total"><thead><tr>';
+                break
+            case apiUrlDeviveRecord:
+                table = '<table id="devicerecord"><thead><tr>';
+                break
+            case apiUrlVendorRecord:
+                table = '<table id="vendorRecord"><thead><tr>';
+                break
+            case apiUrlPurchase2:
+                table = '<table id="purchase"><thead><tr>';
+                break
+            default:
+                break;
+        }
         // 自動產出表頭
         const keys = Object.keys(data[0]);
         keys.forEach(k => {
-            table += `<th>${k}</th>`;
+            if (k != 'state'){
+                table += `<th>${k}</th>`;
+            }
         });
         table += '</tr></thead><tbody>';
         // 每一列資料
         data.forEach(row => {
             table += '<tr>';
             keys.forEach(k => {
-                table += `<td>${row[k]}</td>`;
+                if(k != 'state'){
+                    table += `<td>${row[k]}</td>`;
+                }
             });
             table += '</tr>';
         });

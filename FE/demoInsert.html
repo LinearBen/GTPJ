@@ -5,6 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>簡單簡單</title>
         <link rel="stylesheet" type="text/css" href="css/demoInsert.css"/>
+        <script type="text/javascript"  charset="UTF-8" src="script/loadTable.js" defer></script>
+        
+        
     </head>
     <body>
         <button class="tab-btn" onclick="showBox('purchase')">新增訂單</button>
@@ -19,21 +22,18 @@
             <div id="tableContainer1">載入中…</div>
         </div>
         <br>
-        
-         
-        
+        </body>       
             <script>
                 // API連結
-                const apiUrlProducts = 'http://localhost:8000/api/products';
+                const apiUrl_Products = 'http://localhost:8000/api/products';
                 const apiUrlInsert = 'http://localhost:8000/api/insert';
-                const apiUrlPurchase = 'http://localhost:8000/api/purchaserecord';
                 const container1 = document.getElementById('tableContainer1');
                 // 顯示票種
                 const mymessage = document.getElementById("showticket");
                 showticket();
                 async function showticket(){
                     try{
-                        const resp = await fetch(apiUrlProducts); //GET
+                        const resp = await fetch(apiUrl_Products); //GET
                         if (!resp.ok) throw new Error('HTTP 錯誤:'+resp.status);
                         const data =  await resp.json();
                         console.log(data);
@@ -87,7 +87,7 @@
                             }
                         }      
                     }
-                    await loadPurchaseRecord();
+                    await loadTable(apiUrlPurchase,container1);
                     Array.from(document.getElementsByTagName("input")).forEach(input => {
                         input.value = "";
                     });
@@ -98,8 +98,10 @@
                 function showBox(id){
                     let box = document.getElementById(id);
                     let hide = document.getElementsByClassName('hide');
+                    loadTable(apiUrlPurchase,container1);
                     return (box.classList.contains('hide') ) 
                         ? box.classList.remove('hide') : box.classList.add('hide');
+                    
                     
                 }
 
@@ -117,42 +119,6 @@
                         } 
                     });
                 });
-
-                // 購買紀錄表
-                loadPurchaseRecord()
-                async function loadPurchaseRecord() {
-                try {
-                    const resp = await fetch(apiUrlPurchase);
-                    if (!resp.ok) throw new Error(`HTTP 錯誤: ${resp.status}`);
-                    const data = await resp.json();
-                    if (!Array.isArray(data) || data.length === 0) {
-                    container1.textContent = '沒有資料';
-                    return;
-                    }
-                    // 產生表格
-                    let table = '<table><thead><tr>';
-                    // 自動產出表頭
-                    const keys = Object.keys(data[0]);
-                    keys.forEach(k => {
-                    table += `<th>${k}</th>`;
-                    });
-                    table += '</tr></thead><tbody>';
-                    // 每一列資料
-                    data.forEach(row => {
-                    table += '<tr>';
-                    keys.forEach(k => {
-                        table += `<td>${row[k]}</td>`;
-                    });
-                    table += '</tr>';
-                    });
-                    table += '</tbody></table>';
-                    container1.innerHTML = table;
-                } catch (err) {
-                    container1.textContent = '載入失敗：' + err.message;
-                }
-            }
-                
-
             </script>
-    </body>
+            
 </html>

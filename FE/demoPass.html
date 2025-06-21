@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  
+  <title>通行測試</title>
+  <style>
+    .ticket {
+      display: inline-block;
+      width: 30px;
+      margin-left: 5px;
+    }
+  </style>
+
+
+  
+</head>
+
+<body>
+  
+  <h2>通行測試</h2>
+  <label for="license">車牌號碼：</label>
+  <input type="text" id="license" name="license" placeholder="請輸入車牌號碼">
+  <label for="dname">閘門：</label>
+  <select id="dname">
+    <option value="0">請選擇閘門</option>
+  </select>
+  <button onclick="insertpost()">新增</button>
+
+  <!-- 表格區 -->
+  <div style="display: flex;justify-content: flex-start;align-items: flex-start;">
+    <div style="margin-right: 10px;">
+      <h3>通行紀錄</h3>
+      <div id="container"></div>
+    </div>
+    <div>
+      <h3>購買紀錄</h3>
+      <div id="container1"></div>
+    </div>
+  </div>
+  <script>
+    const container1 = document.getElementById('container');
+    const container2 = document.getElementById('container1');
+    loadTable(apiUrlPass, container1);
+    loadTable(apiUrlPurchase2, container2);
+
+
+    const dname = document.getElementById("dname");
+    //取得客戶名稱在新增到select id:dname
+    async function dnameAdd() {
+      try {
+        const resp = await fetch(apiUrlDeviveRecord);
+        if (!resp.ok) throw new Error(`HTTP 錯誤: ${resp.status}`);
+        const data = await resp.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          container.textContent = '沒有資料';
+          return;
+        }
+        // 每一列資料
+        data.forEach(row => {
+          const { Device_ID, Device_Name } = row;
+
+          let op = document.createElement("option");
+          op.value = Device_ID;
+          op.textContent = Device_ID + Device_Name;
+          dname.append(op)
+        });
+      } catch (err) {
+      }
+    }
+    dnameAdd()
+
+
+
+     function insertpost() {
+      // API連結
+      const apiUrlInsert = 'http://localhost:8000/api/insert';
+      let license = document.getElementById("license").value.trim();
+      let device_id = document.getElementById("dname").value.trim();
+      const tbody = document.querySelector("#purchase tbody")
+      const rows = tbody.getElementsByTagName("tr");
+
+      // 從purchase table查詢目前輸入的license是否存在 
+      // for (let i = 0; i < rows.length; i++) {
+      //   // 取得當下row的cells
+      //   const cells = rows[i].getElementsByTagName("td");
+      //   // 取得第二欄的字串
+      //   const secCol = cells[1].textContent.toLowerCase();
+
+      //   // 有找到就直接跳出迴圈，如果都找不到就return alert("禁止通行，請購買過路權")
+      //   if (license.toLowerCase() === secCol) {
+      //     break;
+      //   } else if (i === rows.length - 1) {
+      //     alert("禁止通行，請購買過路權")
+      //     return;
+      //   }
+      // }
+      //警告沒有選擇閘門 (dname為0的時候)
+      if (device_id == 0) {
+        alert("請選擇閘門");
+        return;
+      }
+      //回傳資料到insert API
+      fetch(apiUrlInsert, {
+        method: 'POST',
+        mode: 'cors',
+          body: JSON.stringify({
+            table: "pass",
+            License_Plate: license,
+            Device_ID: device_id,
+          }),
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(err => { throw new Error(err); });
+        }
+        return response.text();
+      })
+      .then(data => {
+        console.log("成功", data);
+      })
+      .catch(err => {
+        alert(err.message);  // ✅這裡會收到後端錯誤訊息
+      });
+
+
+
+
+      //輸入與選擇回歸預設
+      document.getElementById("license").value = "";
+      document.getElementById("dname").value = "0";
+
+      //刷新頁面的兩個table
+       loadTable(apiUrlPass, container1);
+       loadTable(apiUrlPurchase2, container2);
+      /*
+      if (pname && price) {
+        let returnbody= JSON.stringify({ table:"products", pname: pname,  price: price});
+        console.log(returnbody);
+        //格式檢查
+        fetch('http://localhost:8000/api/2/insert', {
+          method: 'POST',
+          mode: 'cors', // ✅ 很關鍵
+          body: returnbody,
+        })
+        console.log("完成fetch")
+      } else {
+        alert("請輸入資料");
+      }
+        */
+    }
+  </script>
+</body>
+
+
+</html>

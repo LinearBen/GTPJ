@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>新增資料</title>
         <link rel="stylesheet" type="text/css" href="css/demoInsert.css"/>
-        <script type="text/javascript"  charset="UTF-8" src="script/loadTable.js" defer></script>
+        <!-- <script type="text/javascript"  charset="UTF-8" src="script/loadTable.js" defer></script> -->
 
     </head>
     <body>
@@ -14,7 +14,8 @@
             <button class="tab-btn" onclick="showBox('vendor')">新增維護人員</button>
             <button class="tab-btn" onclick="showBox('maintenance')">新增維護紀錄</button>
             
-        </nav>  
+        </nav> 
+        <!-- 設備  -->
         <div class="hide" id="device">
             <h2>設備新增表單</h2>
             <label for="device">設備名稱：</label>
@@ -40,7 +41,7 @@
             <hr/>
         </div>
         
-        
+        <!-- 維護紀錄 -->
         <div class="hide" id="maintenance">
             <h2>設備維護登記表單</h2>
             <label for="dname">維護設備：</label>
@@ -66,6 +67,8 @@
             <div id="tableContainer2"></div>
             <hr/>
         </div>
+        
+        <!-- 維護人員 -->
         <div class="hide" id="vendor">
             <h2>維護人員新增表單</h2>
             <label for="vendorName">廠商名稱：</label>
