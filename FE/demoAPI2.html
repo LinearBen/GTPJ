@@ -8,15 +8,16 @@
 
 <head>
   <meta charset="UTF-8" />
- 
+
   <title>資料操作</title>
   <link rel="stylesheet" href="css/demoAPI.css" />
   
 
+
 </head>
 
 <body>
-  
+
   <h1>資料表操作</h1>
   <div>
     <button class="tab-btn" onclick="updateTable(apiUrlPurchase, container1)">購買資料</button>
@@ -32,6 +33,7 @@
 
 
   <script>
+    
     const container1 = document.getElementById('tableContainer1');
     const apiUrlProducts = 'http://localhost:8000/api/products';
     const apiUrlPurchase = 'http://localhost:8000/api/purchaserecord';
@@ -79,6 +81,8 @@
         table += '<th>操作</th>';
         // 自動產出表頭
         const keys = Object.keys(data[0]);
+        const IDs = data.map(obj => Object.values(obj)[0]);
+        let i = 0;
         // console.log(keys);
         keys.forEach(k => {
           if (k != 'state') {
@@ -89,20 +93,35 @@
         // 每一列資料
         data.forEach(row => {
           const x = JSON.stringify({ ...row, state: -1, table: tablename });
+          const y = JSON.stringify({ ...row })
+          
+          const ID = IDs[i++];
+          
+          // console.log(ID);
+          console.log(ID);
           // console.log(x);
           table += '<tr>';
-          table += `<td><button onclick='updaterow(${x})'>刪除</button></td>`;
+          table += `<td>
+                        
+                        <button onclick='updaterow(${x})'>刪除</button>
+                                            
+                        <button id='btn2_${ID}' onclick='editOn(${ID},${y})' style='display:block')'>修改</button>
+                                                
+                        <button id='btn3_${ID}' onclick='saveEdit(${ID},${y})' style='display:none' >儲存</button>
+                        
+                      </td>`;
 
           keys.forEach(k => {
 
             if (k != 'state') {
-              table += `<td>${row[k]}</td>`;
+              table += `<td data-key='${k}' class='input_${ID}'>${row[k]}</td>`;
               // console.log(row[k]);
             }
 
           });
 
           table += '</tr>';
+          
         });
         table += '</tbody></table>';
         todiv.innerHTML = table;
@@ -112,14 +131,218 @@
     }
     function updaterow(returnbody) {
       console.log(returnbody)
-      fetch('http://localhost:8000/api/update', {
-        method: 'POST',
-        mode: 'cors', // ✅ 很關鍵
-        body: JSON.stringify(returnbody),
-      })
-
-      updateTable(currentUrl, currentTodiv);
+      try  {
+          fetch('http://localhost:8000/api/update', {
+          method: 'POST',
+          mode: 'cors', // ✅ 很關鍵
+          body: JSON.stringify(returnbody),
+        })
+        alert("成功")
+        updateTable(currentUrl, currentTodiv);
+      }catch (err) {
+        alert(err.message);
+      }
     }
+
+    function editOn(Order_ID, row) {
+      
+
+      // 顯示/隱藏按鈕
+      const button_hide = document.getElementById(`btn2_${Order_ID}`);
+      const button_show = document.getElementById(`btn3_${Order_ID}`);
+      button_hide.style.display = 'none';
+      button_show.style.display = 'block';
+
+      // 文字轉輸入元素
+      const inputs = document.getElementsByClassName(`input_${Order_ID}`);
+
+      let nonEditTableKeys = ['Order_ID', 'Device_ID', 'maintenance_ID', 'Vendor_ID', 'PassTimes', 'Cost']; //不轉換的欄位
+
+      const keys = Object.keys(row);
+      keys.pop();
+      // console.log(keys);
+
+      for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        const text = input.textContent;
+
+
+        if (!nonEditTableKeys.includes(keys[i])) {
+          input.innerHTML = `<input type="text" value="${text}" />`;
+          // 特定欄位使用select，指定table為input欄位
+          if (keys[i] == 'TicketName') { //產品資料
+            
+            switch (currentUrl) {
+                case apiUrlProducts:
+                  break;
+
+                default:
+                  input.innerHTML = ` <label for="pname"></label>
+                                      <select  id="pname">
+                                        <option value="">請選擇票種</option>
+                                    </select>`
+                  selectAdd('pname', apiUrlProducts);
+                  break;
+                                   
+            }
+          }
+          if (keys[i] == 'Device_Name') { //設備購買紀錄
+            switch (currentUrl) {
+                case apiUrlDeviveRecord:
+                  break;
+
+                default:
+                  input.innerHTML = ` <label for="dname"></label>
+                                      <select  id="dname">
+                                        <option value="">請選擇設備</option>
+                                    </select>`
+                  selectAdd('dname', apiUrlDeviveRecord);
+                  break;
+                                  
+            }
+          }
+          if (keys[i] == 'Vendor_Name') { //維護人員名單
+            switch (currentUrl) {
+                case apiUrlVendorRecord:
+                  break;
+
+                default:
+                  input.innerHTML = ` <label for="vname"></label>
+                                      <select  id="vname">
+                                        <option value="">請選擇維護人員</option>
+                                    </select>`
+                  selectAdd('vname', apiUrlVendorRecord);
+                  break;
+                                  
+            }
+            
+          }
+          if (keys[i] == 'Status'){
+              input.innerHTML = `<label for="status"></label>
+                                  <select  id="status">
+                                    <option value="">請選擇狀態</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Expired">Expired</option>
+                                    <option value="Used">Used</option>
+                                  </select>`;
+            }
+
+
+        }
+
+      }
+
+
+    }
+
+    function saveEdit(id,data) {
+      const tr = document.querySelector(`#btn3_${id}`).closest('tr');
+      console.log(tr);
+      let tablename = '';
+      switch (currentUrl) {
+        case apiUrlProducts:
+          tablename = 'products';
+          break;
+        case apiUrlPurchase:
+          tablename = 'purchase';
+          break;
+        case apiUrlMaintenancerecord:
+          tablename = 'maintenancerecord';
+          break;
+        case apiUrlDeviveRecord:
+          tablename = 'devicerecord';
+          break;
+        case apiUrlVendorRecord:
+          tablename = 'vendor';
+          break;
+      }
+      const payload = {...data, table: tablename,state:0};
+      const filterKeys = ['Expiration_Date','Duration','Email','Address']
+      tr.querySelectorAll('td').forEach(td => {
+        const key = td.getAttribute('data-key');
+        const input = td.querySelector('input');
+        const select = td.querySelector('select');
+
+        if (input) {
+          payload[key] = input.value;
+          if (input.value==""){
+            if(filterKeys.includes(key)){
+              payload[key] = "";
+            } else{
+            console.log(key);
+            alert("請輸入"+""+key);
+            return;
+            }
+          }
+        }
+        if (select) {
+          payload[key] = select.value;
+          if (select.value==""){
+            console.log(key);
+            alert("請選擇"+""+key);
+            return;
+          } 
+        }
+        
+        
+      });
+      console.log(payload);
+      updaterow(payload);
+
+
+    }
+    // 選項新增
+    async function selectAdd(opID, apiUrl) {
+    const opname = document.getElementById(opID);
+     // 清空選項（保留第一個 -- 選項）
+    const firstOption = opname.options[0];
+    opname.innerHTML = '';
+    if (firstOption) {
+        opname.appendChild(firstOption);
+    }
+    try {
+        const resp = await fetch(apiUrl);
+        if (!resp.ok) throw new Error(`HTTP 錯誤: ${resp.status}`);
+        const data = await resp.json();
+        if (!Array.isArray(data) || data.length === 0) {
+            container.textContent = '沒有資料';
+            return;
+        }
+        // 每一列資料
+        data.forEach(row => {
+            switch (opID) {
+                case "pname":
+                    const { TicketName } = row;
+
+                    let op = document.createElement("option");
+                    op.value = TicketName;
+                    op.textContent = TicketName;
+                    opname.append(op)
+                    break;
+                case "dname":
+                    const { Device_Name } = row;
+
+                    let op1 = document.createElement("option");
+                    op1.value = Device_Name;
+                    op1.textContent = Device_ID + Device_Name;
+                    opname.append(op1)
+                    break;
+                case "vname":
+                    const { Vendor_Name} = row;
+
+                    let op2 = document.createElement("option");
+                    op2.value = Vendor_Name;
+                    op2.textContent = Vendor_Name;
+                    opname.append(op2)
+                    break;
+
+
+            }
+        });
+    } catch (err) {
+    }
+}
+    
   </script>
 </body>
 
