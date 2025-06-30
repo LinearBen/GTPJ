@@ -264,6 +264,14 @@ public class Main {
     static class InsertDataHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            System.out.println("有人呼叫 /api/insert，method: " + exchange.getRequestMethod());
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+                exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+                exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "*");
+                exchange.sendResponseHeaders(204, -1); // 204 No Content
+                return;
+            }
             String body = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))
                     .lines().collect(Collectors.joining());
             Map<String, String> map = DBConnect.parseJson(body);
@@ -304,6 +312,8 @@ public class Main {
                     } catch (SQLException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
+                        exchange.sendResponseHeaders(500, -1);
+                        return;
                     }
                     break;
                 case "device":
@@ -324,6 +334,8 @@ public class Main {
                                 deviceId, deviceName, dateTime, price, Maintenance_Interval, remark);
                     } catch (Exception e) {
                         e.printStackTrace();
+                        exchange.sendResponseHeaders(500, -1);
+                        return;
                     }
                     break;
                 case "maintenance":
@@ -377,6 +389,8 @@ public class Main {
 
                     } catch (Exception e) {
                         e.printStackTrace();
+                        exchange.sendResponseHeaders(500, -1);
+                        return;
                     }
                     break;
                 
@@ -437,6 +451,8 @@ public class Main {
 
                     } catch (Exception e) {
                         e.printStackTrace();
+                        exchange.sendResponseHeaders(500, -1);
+                        return;
                     }
                     break;
 
@@ -445,7 +461,13 @@ public class Main {
                     break;
 
             }
-
+            String responseText = "資料已儲存成功";
+            byte[] responseBytes = responseText.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.sendResponseHeaders(200, responseBytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(responseBytes);
+            }
         }
     }
 

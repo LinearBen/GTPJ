@@ -155,9 +155,12 @@
       }
       //回傳資料到insert API
       try{
-        fetch(apiUrlInsert, {
+        const response = await fetch(apiUrlInsert, {
           method: 'POST',
           mode: 'cors',
+            headers:{
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
               table: "pass",
               License_Plate: license,
@@ -169,16 +172,20 @@
           throw new Error(errText || `HTTP 錯誤: ${response.status}`);
         }
 
-        console.log("成功", await response.text());
+        
 
         // Reset form and refresh tables
-        licenseInput.value = "";
-        dnameSelect.value = "0";
-        await loadTable(apiUrlPass, passageContainer);
-        await loadTable(apiUrlPurchase2, purchaseContainer);
+        document.getElementById("license").value = "";
+        document.getElementById("dname").value = "0";
+
+        await  loadTable(apiUrlPass, container1);
+        await  loadTable(apiUrlPurchase2, container2);
+
+        alert("成功", await response.text());
 
       } catch (err) {
-        alert(err.message); // This will show the backend error message
+          console.error("錯誤：", err);
+          alert("發生錯誤：" + err.message);
       }
     }
 
